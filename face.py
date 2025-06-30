@@ -1,27 +1,36 @@
-import librosa
-import numpy as np
+import librosa  # For audio processing
+import numpy as np  # For numerical calculations
 
-# Global variable to store baseline pitch
+# This stores the baseline pitch of your calm voice
 baseline_pitch = None
 
+# Function to calculate average pitch (frequency) of an audio signal
 def get_average_pitch(y, sr):
     try:
+        # librosa.yin estimates pitch for each frame; we take the average pitch overall
         f0 = librosa.yin(y, fmin=50, fmax=500, sr=sr)
         return np.mean(f0)
     except:
+        # Return 0 if pitch can't be calculated
         return 0
 
+# Function to calculate the 'energy' of the audio signal (loudness proxy)
 def get_energy(y):
+    # Sum of absolute amplitudes normalized by length
     return np.sum(np.abs(y)) / len(y)
 
+# Analyze a single audio file for pitch, energy, and zero crossing rate (ZCR)
 def analyze_audio(audio_path):
     global baseline_pitch
 
+    # Load audio file; y = audio samples, sr = sample rate
     y, sr = librosa.load(audio_path, sr=None)
-    y = y / np.max(np.abs(y))  # Normalize
+    # Normalize audio so the loudest point is 1 (prevents scale issues)
+    y = y / np.max(np.abs(y))
 
     avg_pitch = get_average_pitch(y, sr)
     energy = get_energy(y)
+    # ZCR roughly measures how often the sound waveform crosses zero; linked to noisiness or stress
     zcr = np.mean(librosa.feature.zero_crossing_rate(y))
 
     print("\n--- Audio Analysis ---")
@@ -32,7 +41,7 @@ def analyze_audio(audio_path):
     print(f"Energy:                   {energy:.4f}")
     print(f"Zero Crossing Rate:       {zcr:.4f}")
 
-    # Simple stress detection
+    # Simple stress detection logic based on pitch change, energy, and ZCR
     stressed = False
     if avg_pitch - baseline_pitch > 30:
         stressed = True
@@ -42,6 +51,7 @@ def analyze_audio(audio_path):
     else:
         print("✅ No significant stress indicators.")
 
+# Ask user to provide baseline audio to establish calm voice pitch
 def set_baseline():
     global baseline_pitch
     while True:
@@ -55,6 +65,7 @@ def set_baseline():
         except Exception as e:
             print(f"Error loading baseline audio: {e}\nPlease try again.")
 
+# Main program interaction loop
 def main():
     print("🎙️ Welcome to the Stress Voice Analyzer!")
     print("Before you begin, let's capture your baseline voice.\n")
@@ -75,6 +86,7 @@ def main():
             print("Please enter 'yes' or 'exit'.")
 
 main()
+
 
 
 
