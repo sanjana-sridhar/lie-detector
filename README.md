@@ -52,6 +52,7 @@ Install them using:
 
 ```bash
 pip install librosa numpy
+```
 
 ## Flowchart
 
