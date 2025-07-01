@@ -38,7 +38,7 @@ A Python-based voice analysis tool that compares your speaking voice to a calm b
 - Train a machine learning model for better accuracy
 - Visualize waveform and pitch graphically with `matplotlib` or a GUI
 
-  ## License
+## License
 
 This project is licensed under the [MIT License](LICENSE).
 
