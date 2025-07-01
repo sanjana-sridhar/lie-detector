@@ -43,13 +43,25 @@ def analyze_audio(audio_path):
 
     # Simple stress detection logic based on pitch change, energy, and ZCR
     stressed = False
-    if avg_pitch - baseline_pitch > 30:
-        stressed = True
+    # Determine if pitch suggests stress
+    stressed = (avg_pitch - baseline_pitch > 30)
 
-    if stressed or energy > 0.1 or zcr > 0.1:
+    # Evaluate each indicator
+    stress_signs = 0
+
+    if stressed:
+        stress_signs += 1
+    if energy > 0.1:
+        stress_signs += 1
+    if zcr > 0.1:
+        stress_signs += 1
+
+    # Final decision based on 2 or more stress indicators
+    if stress_signs >= 2:
         print("⚠️  Stress/Lie suspected!")
     else:
         print("✅ No significant stress indicators.")
+
 
 # Ask user to provide baseline audio to establish calm voice pitch
 def set_baseline():
