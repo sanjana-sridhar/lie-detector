@@ -38,20 +38,25 @@ A Python-based voice analysis tool that compares your speaking voice to a calm b
 - Train a machine learning model for better accuracy
 - Visualize waveform and pitch graphically with `matplotlib` or a GUI
 
-## Requirements
+  ## License
 
-To run this app, you’ll need:
+This project is licensed under the [MIT License](LICENSE).
+
+## Requirements 
 
 - Python 3.x
 - The following Python packages:
 
+To make installation easier, you can create a `requirements.txt` file in your project root with the following:
+
 librosa
 numpy
 
-Install them using:
+
+Then install dependencies with:
 
 ```bash
-pip install librosa numpy
+pip install -r requirements.txt
 ```
 
 ## Flowchart
