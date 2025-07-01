@@ -38,6 +38,21 @@ A Python-based voice analysis tool that compares your speaking voice to a calm b
 - Train a machine learning model for better accuracy
 - Visualize waveform and pitch graphically with `matplotlib` or a GUI
 
+## Requirements
+
+To run this app, you’ll need:
+
+- Python 3.x
+- The following Python packages:
+
+librosa
+numpy
+
+Install them using:
+
+```bash
+pip install librosa numpy
+
 ## Flowchart
 
 ![App Flowchart](images/lie-detector-flowchart.png)
