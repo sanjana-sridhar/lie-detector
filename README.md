@@ -71,4 +71,4 @@ pip install librosa numpy pandas
 
 ## Flowchart
 
-![App Flowchart](images/lie-detector-flowchart.png)
+![App Flowchart](images/new-lie-detector-flowchart.png)
