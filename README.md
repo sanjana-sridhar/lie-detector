@@ -66,7 +66,6 @@ pandas
 
 Then install dependencies with:
 
-```bash
 pip install librosa numpy pandas
 ```
 
