@@ -67,7 +67,7 @@ pandas
 Then install dependencies with:
 
 ```bash
-pip install -r requirements.txt
+pip install librosa numpy pandas
 ```
 
 ## Flowchart
