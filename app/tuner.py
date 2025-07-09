@@ -116,11 +116,14 @@ def tune_thresholds(data):
 
     return best_combo, best_accuracy
 
-# --- Save best thresholds to JSON ---
+# --- Save best thresholds to JSON (after converting types) ---
 def save_thresholds(thresholds):
+    # Convert all values to plain float (or int)
+    clean_thresholds = {k: float(v) for k, v in thresholds.items()}
     with open("thresholds.json", "w") as f:
-        json.dump(thresholds, f, indent=4)
+        json.dump(clean_thresholds, f, indent=4)
     print("✅ Saved best thresholds to thresholds.json")
+
 
 # === MAIN SCRIPT ===
 def main():
