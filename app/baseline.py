@@ -1,36 +1,34 @@
-import librosa  # Library for audio analysis
-import numpy as np  # Library for numerical operations
+import librosa  # To load audio
+import numpy as np  # For math calculations
 
-# Function to analyze the baseline pitch from a calm audio recording
-def analyze_baseline(audio_path):
-    # Load the audio file
-    y, sr = librosa.load(audio_path, sr=None)  # y = audio signal, sr = sample rate
+# Function to calculate baseline pitch from user-selected audio
+def analyze_baseline():
+    while True:
+        audio_path = input("🎙️ Enter path to your baseline (calm) voice audio file: ").strip()
+        try:
+            # Load audio
+            y, sr = librosa.load(audio_path, sr=None)
+            pitches, magnitudes = librosa.piptrack(y=y, sr=sr)
 
-    # Get pitch and magnitude values using the piptrack algorithm
-    pitches, magnitudes = librosa.piptrack(y=y, sr=sr)
+            pitch_values = []
+            for i in range(pitches.shape[1]):
+                index = magnitudes[:, i].argmax()
+                pitch = pitches[index, i]
+                if pitch > 0:
+                    pitch_values.append(pitch)
 
-    pitch_values = []
+            avg_pitch = np.mean(pitch_values) if pitch_values else 0
+            print(f"\n✅ Your baseline pitch is: {avg_pitch:.2f} Hz")
 
-    # Loop through each time frame (column in the pitch matrix)
-    for i in range(pitches.shape[1]):
-        # Find the index of the strongest frequency (loudest pitch) in that frame
-        index = magnitudes[:, i].argmax()
-        pitch = pitches[index, i]
+            # Optional: save to file so the analyzer can access it
+            with open("baseline.txt", "w") as f:
+                f.write(str(avg_pitch))
 
-        # Ignore silence or invalid pitch values (which are 0)
-        if pitch > 0:
-            pitch_values.append(pitch)
+            print("📄 Baseline pitch saved to 'baseline.txt'")
+            return avg_pitch
+        except Exception as e:
+            print(f"❌ Error loading audio: {e}\nPlease try again.")
 
-    # Calculate the average pitch (only if valid pitches were found)
-    avg_pitch = np.mean(pitch_values) if pitch_values else 0
-
-    # Print the result to the user
-    print(f"🎤 Your baseline pitch is: {avg_pitch:.2f} Hz")
-    return avg_pitch
-
-# Example usage:
-# Analyze the pitch of a calm (baseline) voice recording
-# Replace this with your actual audio file path
-baseline_pitch = analyze_baseline("/Users/sanjana/PycharmProjects/baseline2.wav")
-
-
+# Run it!
+if __name__ == "__main__":
+    analyze_baseline()
