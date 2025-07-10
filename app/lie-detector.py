@@ -1,105 +1,152 @@
-import librosa  # For audio processing
-import numpy as np  # For numerical calculations
+import librosa
+import numpy as np
+import pandas as pd
+import json
+import os
 
-# This stores the baseline pitch of your calm voice
-baseline_pitch = None
+# Load baseline pitch from file
+with open("baseline.txt") as f:
+    baseline_pitch = float(f.read().strip())
 
-# Function to calculate average pitch (frequency) of an audio signal
-def get_average_pitch(y, sr):
-    try:
-        # librosa.yin estimates pitch for each frame; we take the average pitch overall
-        f0 = librosa.yin(y, fmin=50, fmax=500, sr=sr)
-        return np.mean(f0)
-    except:
-        # Return 0 if pitch can't be calculated
-        return 0
+# Load thresholds from tuner
+with open("thresholds.json") as f:
+    thresholds = json.load(f)
 
-# Function to calculate the 'energy' of the audio signal (loudness proxy)
+# CSV path to store results
+csv_path = "voice_analysis_log.csv"
+
+# Define expected columns
+columns = [
+    "filename", "avg_pitch", "pitch_change", "pitch_std", "energy",
+    "energy_std", "zcr", "voiced_ratio", "triggers", "verdict"
+]
+
+# Load CSV if it exists and has content, otherwise create new
+try:
+    if os.path.exists(csv_path) and os.path.getsize(csv_path) > 0:
+        log_df = pd.read_csv(csv_path)
+        # Check if required columns exist
+        if not set(columns).issubset(log_df.columns):
+            raise ValueError("Missing columns in CSV. Reinitializing log.")
+    else:
+        raise FileNotFoundError
+except (pd.errors.EmptyDataError, FileNotFoundError, ValueError):
+    # If file is missing, empty, or invalid, create a new one
+    log_df = pd.DataFrame(columns=columns)
+    print("🆕 New CSV log initialized.")
+
+
+# Function to calculate average energy (loudness)
 def get_energy(y):
-    # Sum of absolute amplitudes normalized by length
     return np.sum(np.abs(y)) / len(y)
 
-# Analyze a single audio file for pitch, energy, and zero crossing rate (ZCR)
+# Main function to analyze a new audio file
 def analyze_audio(audio_path):
-    global baseline_pitch
+    global log_df
 
-    # Load audio file; y = audio samples, sr = sample rate
+    # Load and normalize audio
     y, sr = librosa.load(audio_path, sr=None)
-    # Normalize audio so the loudest point is 1 (prevents scale issues)
     y = y / np.max(np.abs(y))
 
-    avg_pitch = get_average_pitch(y, sr)
-    energy = get_energy(y)
-    # ZCR roughly measures how often the sound waveform crosses zero; linked to noisiness or stress
-    zcr = np.mean(librosa.feature.zero_crossing_rate(y))
+    # Extract only voiced (speaking) sections
+    intervals = librosa.effects.split(y, top_db=30)
+    if len(intervals) == 0:
+        print("⚠️ No speech detected.")
+        return
 
+    voiced = np.concatenate([y[start:end] for start, end in intervals])
+    if len(voiced) == 0:
+        print("⚠️ Voiced segment extraction failed.")
+        return
+
+    # Calculate vocal features
+    f0 = librosa.yin(voiced, fmin=50, fmax=500, sr=sr)
+    avg_pitch = np.mean(f0)
+    pitch_std = np.std(f0)
+    pitch_change = avg_pitch - baseline_pitch
+
+    energy = get_energy(voiced)
+    rms = librosa.feature.rms(y=voiced)[0]
+    energy_std = np.std(rms)
+
+    zcr = np.mean(librosa.feature.zero_crossing_rate(y=voiced))
+    voiced_ratio = sum((end - start) for start, end in intervals) / len(y)
+
+    # Show results
     print("\n--- Audio Analysis ---")
-    print(f"Average Pitch:            {avg_pitch:.2f} Hz")
-    pitch_diff = avg_pitch - baseline_pitch
-    print(f"Baseline Pitch:           {baseline_pitch:.2f} Hz")
-    print(f"Pitch Change:             {pitch_diff:+.2f} Hz")
-    print(f"Energy:                   {energy:.4f}")
-    print(f"Zero Crossing Rate:       {zcr:.4f}")
+    print(f"Average Pitch:         {avg_pitch:.2f} Hz")
+    print(f"Pitch Change:          {pitch_change:.2f} Hz")
+    print(f"Pitch Std (jitter):    {pitch_std:.2f}")
+    print(f"Energy:                {energy:.4f}")
+    print(f"Energy Std (shimmer):  {energy_std:.4f}")
+    print(f"Zero Crossing Rate:    {zcr:.4f}")
+    print(f"Voiced Ratio (0-1):    {voiced_ratio:.2f}")
 
-    # Simple stress detection logic based on pitch change, energy, and ZCR
-    stressed = False
-    # Determine if pitch suggests stress
-    stressed = (avg_pitch - baseline_pitch > 30)
+    # Check against thresholds
+    triggers = []
 
-    # Evaluate each indicator
-    stress_signs = 0
+    if pitch_change > thresholds["pitch_diff"]:
+        triggers.append("🔺 High pitch deviation")
+    if energy > thresholds["energy"]:
+        triggers.append("⚡ High energy")
+    if pitch_std > thresholds["pitch_std"]:
+        triggers.append("🎤 High pitch variability (jitter)")
+    if energy_std > thresholds["energy_std"]:
+        triggers.append("🔊 Energy variability (shimmer)")
+    if zcr > thresholds["zcr"]:
+        triggers.append("🎯 High zero-crossing rate")
+    if voiced_ratio < thresholds["voiced_ratio"]:
+        triggers.append("⏸️ Too many pauses (low voiced ratio)")
 
-    if stressed:
-        stress_signs += 1
-    if energy > 0.1:
-        stress_signs += 1
-    if zcr > 0.1:
-        stress_signs += 1
-
-    # Final decision based on 2 or more stress indicators
-    if stress_signs >= 2:
-        print("⚠️  Stress/Lie suspected!")
+    # Decide verdict
+    print("\n--- Triggers ---")
+    if triggers:
+        for t in triggers:
+            print(f"❗ {t}")
     else:
-        print("✅ No significant stress indicators.")
+        print("✅ No stress features triggered.")
 
+    if len(triggers) >= 3:
+        verdict = "Lie"
+        print("\n⚠️ Verdict: STRESSED or LYING (3+ triggers)\n")
+    else:
+        verdict = "Truth"
+        print("\n✅ Verdict: Likely Truthful (fewer than 3 triggers)\n")
 
-# Ask user to provide baseline audio to establish calm voice pitch
-def set_baseline():
-    global baseline_pitch
-    while True:
-        audio_path = input("Enter path to your baseline (calm/normal voice) audio file: ")
-        try:
-            y, sr = librosa.load(audio_path, sr=None)
-            y = y / np.max(np.abs(y))
-            baseline_pitch = get_average_pitch(y, sr)
-            print(f"\n✅ Baseline pitch set to: {baseline_pitch:.2f} Hz\n")
-            break
-        except Exception as e:
-            print(f"Error loading baseline audio: {e}\nPlease try again.")
+    # Log results
+    log_df.loc[len(log_df)] = {
+        "filename": audio_path,
+        "avg_pitch": avg_pitch,
+        "pitch_change": pitch_change,
+        "pitch_std": pitch_std,
+        "energy": energy,
+        "energy_std": energy_std,
+        "zcr": zcr,
+        "voiced_ratio": voiced_ratio,
+        "triggers": "\n".join(triggers),
+        "verdict": verdict
+    }
 
-# Main program interaction loop
+    log_df.to_csv(csv_path, index=False)
+    print(f"📄 Logged result to {csv_path}")
+
+# Main loop to analyze multiple files
 def main():
-    print("🎙️ Welcome to the Stress Voice Analyzer!")
-    print("Before you begin, let's capture your baseline voice.\n")
-    set_baseline()
-
+    print("🎤 Voice Analyzer Ready!")
     while True:
-        choice = input("Do you want to analyze a new audio? (yes/exit): ").strip().lower()
+        choice = input("Analyze a new audio file? (yes/exit): ").strip().lower()
         if choice == "yes":
-            audio_path = input("Enter path to the audio file: ")
+            audio_path = input("Enter path to audio file: ").strip()
             try:
                 analyze_audio(audio_path)
             except Exception as e:
-                print(f"Error analyzing audio: {e}")
+                print(f"❌ Error analyzing file: {e}")
         elif choice == "exit":
-            print("Goodbye!")
+            print("👋 Exiting analyzer.")
             break
         else:
-            print("Please enter 'yes' or 'exit'.")
+            print("Please type 'yes' or 'exit'.")
 
-main()
-
-
-
-
-
+# Run the program
+if __name__ == "__main__":
+    main()
