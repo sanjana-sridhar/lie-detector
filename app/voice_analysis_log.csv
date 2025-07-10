@@ -1,1 +1,20 @@
-
+filename,avg_pitch,pitch_change,pitch_std,energy,energy_std,zcr,voiced_ratio,triggers,verdict
+/Users/sanjana/PycharmProjects/pay.wav,204.67182610811676,-121.53401389188326,65.9344788634131,0.13663493203853375,0.12332442,0.06933862036401099,0.5451807228915663,"⚡ High energy
+🎤 High pitch variability (jitter)
+🔊 Energy variability (shimmer)
+🎯 High zero-crossing rate",Lie
+/Users/sanjana/PycharmProjects/truth1.wav,171.9312839913672,-154.27455600863283,50.58107150284593,0.08282146453857422,0.09125142,0.022446028148854963,0.6310679611650486,"🎤 High pitch variability (jitter)
+🔊 Energy variability (shimmer)",Truth
+/Users/sanjana/PycharmProjects/lie1.wav,211.4846067310613,-114.72123326893873,78.28517671611064,0.11390378663865783,0.09572453,0.062071010044642855,0.46959459459459457,"⚡ High energy
+🎤 High pitch variability (jitter)
+🔊 Energy variability (shimmer)
+🎯 High zero-crossing rate
+⏸️ Too many pauses (low voiced ratio)",Lie
+/Users/sanjana/PycharmProjects/lie2.wav,197.172870875195,-129.03296912480502,51.66301402925358,0.13873256604696058,0.12783821,0.031613080929487176,0.5574712643678161,"⚡ High energy
+🎤 High pitch variability (jitter)
+🔊 Energy variability (shimmer)",Lie
+/Users/sanjana/PycharmProjects/truth2.wav,186.65642151423106,-139.54941848576897,73.53877442565957,0.11641249785552153,0.12349622,0.05384857382550336,0.46540880503144655,"⚡ High energy
+🎤 High pitch variability (jitter)
+🔊 Energy variability (shimmer)
+🎯 High zero-crossing rate
+⏸️ Too many pauses (low voiced ratio)",Lie
